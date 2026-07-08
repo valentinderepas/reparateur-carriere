@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Le Réparateur de Carrière — POC Alphonse</title>
+<link rel="stylesheet" href="style.css">
+<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 <style>
   @font-face {
     font-family: 'Bianco Sans';
@@ -565,6 +567,8 @@
 </head>
 <body>
 
+<input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png">
+
 <header>
   <div class="logo">alphonse<span>.</span></div>
   <div class="badge-poc">POC — Le Réparateur de Carrière</div>
@@ -690,7 +694,7 @@
   </div>
 </div>
 
-<!-- ============ NOTES POUR LE PRÉSENTATEUR ============ -->
+<!-- ============ NOTES POUR LE PRÉSENTATEUR ============
 <div class="notes-demo">
   <details>
     <summary>Notes démo (à masquer avant projection si besoin)</summary>
@@ -703,6 +707,7 @@
     </ol>
   </details>
 </div>
+-->
 
 <script>
 /* ================= DONNÉES DE LA DÉMO (fictives) ================= */
@@ -724,7 +729,15 @@ const ANNEES = [
        libelle:"Bulletin de salaire — décembre 1996",
        message:"Ce bulletin est conforme : employeur, période et cumul annuel sont bien lisibles."},
       {nom:"Releve_bancaire_1996.pdf", ext:"PDF", resultat:"ko",
-       message:"Ce document est un relevé bancaire. Il montre des virements, mais les caisses de retraite ne l'acceptent pas comme preuve de salaire. Le document recherché est votre bulletin de salaire de décembre 1996."}
+       message:"Ce document est un relevé bancaire. Il montre des virements, mais les caisses de retraite ne l'acceptent pas comme preuve de salaire. Le document recherché est votre bulletin de salaire de décembre 1996."},
+      {nom:"Bulletin_salaire_decembre_1995.pdf", ext:"PDF", resultat:"ko",
+       message:"Ce bulletin de salaire ne correspond pas à la bonne année (1995 au lieu de 1996). Veuillez fournir le bulletin de salaire pour l'année 1996."},
+      {nom:"Bulletin_salaire_incomplet.pdf", ext:"PDF", resultat:"ko",
+       message:"Le nom de l'employeur ou de l'employé n'est pas visible sur ce document. Veuillez en fournir une version plus lisible."},
+      {nom:"Bulletin_salaire_sans_secu.pdf", ext:"PDF", resultat:"ko",
+       message:"Le numéro de sécurité sociale ou la date de naissance n'est pas visible, ce qui est nécessaire pour l'identification. Veuillez fournir un document où cette information est présente."},
+      {nom:"Bulletin_salaire_salaire_illisible.pdf", ext:"PDF", resultat:"ko",
+       message:"Le montant du salaire n'est pas lisible sur ce document. La caisse de retraite a besoin de cette information pour valider vos droits."}
     ]
   },
   {
@@ -811,7 +824,8 @@ function construireCartes(){
       <div class="zone-resultat" id="resultat-${a.id}"></div>
       <div class="carte-actions" id="actions-${a.id}">
         <button class="btn-secondaire" onclick="basculerExemple(${a.id})">Voir un exemple du document</button>
-        <button class="btn-primaire" onclick="ouvrirModale(${a.id})">Déposer mon document</button>
+        <button class="btn-primaire" onclick="triggerFileUpload(${a.id})">Déposer mon document</button>
+        <button class="btn-secondaire" onclick="ouvrirModale(${a.id})">Utiliser un document de démo</button>
       </div>
     `;
     conteneur.appendChild(carte);
@@ -822,6 +836,77 @@ construireCartes();
 function basculerExemple(id){
   document.getElementById('exemple-' + id).classList.toggle('ouvert');
 }
+
+function triggerFileUpload(id) {
+  anneeCourante = ANNEES.find(a => a.id === id);
+  document.getElementById('file-input').click();
+}
+
+async function analyzeDocument(file, requiredYear) {
+  const { data: { text } } = await Tesseract.recognize(file, 'fra', {
+    logger: m => console.log(m) 
+  });
+
+  console.log("Texte extrait:", text);
+
+  const checks = {
+    year: new RegExp(`\\b${requiredYear}\\b`).test(text),
+    name: /marie/i.test(text) && /textilex/i.test(text),
+    ssn: /(\b1\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{3}\s?\d{3}\s?\d{2}\b)|(\b\d{2}\/\d{2}\/\d{4}\b)/.test(text),
+    salary: /salaire|rémunération|brut|net/i.test(text) && /\d{1,3}(?:\s?\d{3})*(?:,\d{2})?\s?€?/.test(text)
+  };
+
+  if (!checks.year) {
+    return { success: false, message: `Ce document ne semble pas concerner l'année ${requiredYear}.` };
+  }
+  if (!checks.name) {
+    return { success: false, message: "Le nom de l'employé (Marie) ou de l'employeur (Textilex) ne semble pas figurer sur le document." };
+  }
+  if (!checks.ssn) {
+    return { success: false, message: "Le numéro de sécurité sociale ou la date de naissance est introuvable." };
+  }
+  if (!checks.salary) {
+    return { success: false, message: "Aucune information de salaire valide n'a pu être lue sur ce document." };
+  }
+
+  return { success: true, message: "Le document est conforme : toutes les informations requises sont présentes et lisibles." };
+}
+
+function setupFileInputs() {
+  const fileInput = document.getElementById('file-input');
+  fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const annee = anneeCourante;
+    const zone = document.getElementById('resultat-' + annee.id);
+    zone.classList.add('visible');
+    zone.innerHTML = `
+      <div class="analyse-en-cours">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>Analyse de votre document en cours… (cela peut prendre un moment)</span>
+      </div>`;
+
+    try {
+      const result = await analyzeDocument(file, annee.id);
+      if (result.success) {
+        afficherValidation(annee, {
+          resultat: 'ok',
+          libelle: file.name,
+          message: result.message
+        });
+      } else {
+        afficherRefus(annee, { message: result.message });
+      }
+    } catch (error) {
+      console.error(error);
+      afficherRefus(annee, { message: "Une erreur est survenue lors de l'analyse du document. Veuillez réessayer." });
+    }
+    
+    fileInput.value = ''; // Reset file input
+  };
+}
+setupFileInputs();
 
 /* ================= FAUX EXPLORATEUR ================= */
 function ouvrirModale(id){
@@ -882,7 +967,7 @@ function afficherRefus(annee, fichier){
     <div class="resultat-ko">
       <h4>Ce n'est pas tout à fait le bon document — et ce n'est pas grave.</h4>
       <p>${fichier.message}</p>
-      <button class="btn-primaire" onclick="ouvrirModale(${annee.id})">Chercher un autre document</button>
+      <button class="btn-primaire" onclick="triggerFileUpload(${annee.id})">Chercher un autre document</button>
     </div>`;
 }
 
@@ -947,11 +1032,17 @@ function reinitialiser(){
   mettreAJourProgressionSansCta();
   document.getElementById('cta-final').style.display = 'none';
   allerVue(1);
+  setupFileInputs(); // Re-setup file inputs
 }
 function mettreAJourProgressionSansCta(){
   document.getElementById('prog-texte').innerHTML = `<strong>0/3</strong> justificatifs validés`;
   document.getElementById('prog-barre').style.width = '0%';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupFileInputs();
+});
 </script>
+<script src="analyzer.js"></script>
 </body>
 </html>

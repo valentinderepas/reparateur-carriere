@@ -1,0 +1,32 @@
+/* Basic styles for the document checker */
+body {
+    font-family: sans-serif;
+    margin: 2em;
+}
+
+#doc-analyzer {
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+#results {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    background-color: #f9f9f9;
+}
+
+#results h3 {
+    margin-top: 0;
+}
+
+#results p {
+    margin: 5px 0;
+}
+
+.hidden {
+    display: none;
+}
