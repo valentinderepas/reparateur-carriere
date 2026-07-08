@@ -94,12 +94,12 @@ function parseOcrText(text, annee) {
     // 2. Employee / Employer name
     // These are very document-specific and hard to get right without more context.
     // Using keywords that might appear before the names.
-    let nameMatch = text.match(/(?:nom|prénom|salarié|employé)\s*:\s*([A-Z\s]+)/i);
+    let nameMatch = text.match(/(?:nom|prénom|salarié|employé)\s*:\s*([^\r\n]+)/i);
     if (nameMatch) {
         results.employeeName = nameMatch[1].trim();
     }
 
-    let employerMatch = text.match(/(?:employeur|entreprise)\s*:\s*([A-Z\s]+)/i);
+    let employerMatch = text.match(/(?:employeur|entreprise)\s*:\s*([^\r\n]+)/i);
     if (employerMatch) {
         results.employerName = employerMatch[1].trim();
     }
@@ -119,7 +119,7 @@ function parseOcrText(text, annee) {
 
     // 4. Salary
     // Looking for "Net à payer" or "Salaire brut"
-    const salaryRegex = /(net à payer|salaire brut|total brut)\s*([0-9\s,.]+)€?/i;
+    const salaryRegex = /(net à payer|salaire brut annuel cumulé|salaire brut.*?|total brut)\s*:?\s*([0-9\s,.]+)€?/i;
     const salaryMatch = text.match(salaryRegex);
     if (salaryMatch) {
         results.salary = salaryMatch[2].trim();
@@ -130,7 +130,12 @@ function parseOcrText(text, annee) {
 
 function displayResults(results, annee, file) {
     const resultZone = document.getElementById(`resultat-${annee.id}`);
-    const fileIsCorrect = results.foundYear; // Simple check for now
+    
+    const hasYear = results.foundYear;
+    const hasSalary = !!results.salary;
+    const hasEmployeeOrSsn = !!(results.employeeName || results.socialSecurityNumber);
+    
+    const fileIsCorrect = hasYear && hasSalary && hasEmployeeOrSsn;
 
     if (fileIsCorrect) {
         const fichier = {
@@ -141,7 +146,7 @@ function displayResults(results, annee, file) {
         let detailsHtml = `
             <p><strong>Année :</strong> ${results.year || 'Non trouvé'}</p>
             <p><strong>Période d'activité :</strong> ${results.activityPeriod || 'Non trouvée'}</p>
-            <p><strong>Employé :</strong> ${results.employeeName || 'Non trouvé'}</p>
+            ${results.employeeName ? `<p><strong>Employé :</strong> ${results.employeeName}</p>` : ''}
             <p><strong>Employeur :</strong> ${results.employerName || 'Non trouvé'}</p>
             <p><strong>N° Sécurité Sociale :</strong> ${results.socialSecurityNumber || 'Non trouvé'}</p>
             <p><strong>Date de naissance :</strong> ${results.birthdate || 'Non trouvé'}</p>
@@ -165,9 +170,26 @@ function displayResults(results, annee, file) {
         mettreAJourProgression();
 
     } else {
-        const fichier = {
-             message: `Le document que vous avez envoyé ne semble pas correspondre à l'année ${annee.id}. Veuillez vérifier votre document ou en choisir un autre.`
-        };
+        let reasons = [];
+        if (!hasYear) {
+            reasons.push(`l'année ${annee.id} n'a pas été trouvée`);
+        }
+        if (!hasSalary) {
+            reasons.push("le salaire n'a pas été trouvé");
+        }
+        if (!hasEmployeeOrSsn) {
+            reasons.push("ni l'employé ni le numéro de Sécurité Sociale n'ont été trouvés");
+        }
+        
+        let message = `Le document ne semble pas correspondre car `;
+        if (reasons.length === 1) {
+            message += reasons[0] + ".";
+        } else {
+            message += reasons.slice(0, -1).join(", ") + " et " + reasons[reasons.length - 1] + ".";
+        }
+        message += " Veuillez vérifier votre document ou en choisir un autre.";
+
+        const fichier = { message };
         afficherRefus(annee, fichier);
     }
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Le Réparateur de Carrière — POC Alphonse</title>
+<title>🩹 Le Réparateur de Carrière 🩹</title>
 <link rel="stylesheet" href="style.css">
 <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 <style>
@@ -119,25 +119,16 @@
   header{
     background:var(--blanc);
     border-bottom:1px solid #e8e4dc;
-    padding:16px 32px;
+    padding:24px 32px;
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
+    justify-content:center;
   }
-  .logo{
+  header h1{
     font-family:'Spoof','Bookman Old Style',Georgia,serif;
-    font-size:1.6rem;
+    font-size:1.8rem;
+    font-weight:500;
     color:var(--noir);
-  }
-  .logo span{color:var(--vert);}
-  .badge-poc{
-    background:var(--jaune);
-    padding:6px 14px;
-    font-size:0.78rem;
-    text-transform:uppercase;
-    letter-spacing:0.1em;
   }
 
   /* ============ STEPPER ============ */
@@ -570,8 +561,7 @@
 <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png">
 
 <header>
-  <div class="logo">alphonse<span>.</span></div>
-  <div class="badge-poc">POC — Le Réparateur de Carrière</div>
+  <h1>🩹 Le Réparateur de Carrière 🩹</h1>
 </header>
 
 <nav class="stepper" aria-label="Étapes du parcours">
