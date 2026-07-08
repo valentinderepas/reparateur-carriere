@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Réparateur de Carrière — POC Alphonse</title>
+<style>
+  /* ============ DESIGN SYSTEM ALPHONSE ============ */
+  :root{
+    --noir:#121212;
+    --gris:#727272;
+    --vert:#4EB684;
+    --vert-clair:#8BCEA8;
+    --rose:#F6A7A6;
+    --rose-pale:#FDF6F4;
+    --beige:#F7F5F0;
+    --beige-2:#F5E9DC;
+    --blanc-casse:#F7F7F7;
+    --jaune:#FFE7AC;
+    --blanc:#FFFFFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Bianco Sans','Calibri','Segoe UI',sans-serif;
+    background:var(--beige);
+    color:var(--noir);
+    font-size:18px;
+    line-height:1.6;
+  }
+  h1,h2,h3{
+    font-family:'Spoof','Spoof Medium','Bookman Old Style',Georgia,serif;
+    font-weight:500;
+    line-height:1.2;
+  }
+  .surtitre{
+    font-family:'Spot','Bianco Sans','Calibri',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    font-size:0.75rem;
+    color:var(--gris);
+  }
+  button{
+    font-family:inherit;
+    font-size:1rem;
+    cursor:pointer;
+    border:none;
+    border-radius:0; /* boutons rectangulaires */
+  }
+  .btn-primaire{
+    background:var(--noir);
+    color:var(--blanc);
+    padding:14px 28px;
+    transition:background .2s;
+  }
+  .btn-primaire:hover{background:var(--vert);}
+  .btn-vert{
+    background:var(--vert);
+    color:var(--blanc);
+    padding:14px 28px;
+    transition:filter .2s;
+  }
+  .btn-vert:hover{filter:brightness(0.93);}
+  .btn-secondaire{
+    background:transparent;
+    color:var(--noir);
+    border:1.5px solid var(--noir);
+    padding:12px 24px;
+    transition:background .2s,color .2s;
+  }
+  .btn-secondaire:hover{background:var(--noir);color:var(--blanc);}
+  button:focus-visible,a:focus-visible{outline:3px solid var(--vert);outline-offset:2px;}
+
+  /* ============ HEADER ============ */
+  header{
+    background:var(--blanc);
+    border-bottom:1px solid #e8e4dc;
+    padding:16px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .logo{
+    font-family:'Spoof','Bookman Old Style',Georgia,serif;
+    font-size:1.6rem;
+    color:var(--noir);
+  }
+  .logo span{color:var(--vert);}
+  .badge-poc{
+    background:var(--jaune);
+    padding:6px 14px;
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+  }
+
+  /* ============ STEPPER ============ */
+  .stepper{
+    max-width:860px;
+    margin:32px auto 0;
+    padding:0 24px;
+    display:flex;
+    gap:8px;
+  }
+  .step{
+    flex:1;
+    text-align:center;
+    padding:10px 6px;
+    background:var(--blanc);
+    border-bottom:4px solid #e8e4dc;
+    font-size:0.82rem;
+    color:var(--gris);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  .step.active{border-bottom-color:var(--vert);color:var(--noir);font-weight:600;}
+  .step.done{border-bottom-color:var(--vert-clair);color:var(--gris);}
+  .step.done::before{content:"✓ ";color:var(--vert);}
+
+  /* ============ VUES ============ */
+  main{max-width:860px;margin:0 auto;padding:32px 24px 80px;}
+  .vue{display:none;animation:fadein .4s ease;}
+  .vue.visible{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:0.01ms !important;}
+  }
+
+  .intro h1{font-size:2.1rem;margin:8px 0 12px;}
+  .intro p{color:var(--gris);max-width:600px;}
+
+  /* ============ VUE 1 : CONSTAT ============ */
+  .synthese{
+    display:flex;
+    gap:16px;
+    margin:28px 0;
+    flex-wrap:wrap;
+  }
+  .chiffre-cle{
+    flex:1;
+    min-width:180px;
+    background:var(--blanc);
+    padding:20px 24px;
+  }
+  .chiffre-cle .nb{
+    font-family:'Spoof','Bookman Old Style',Georgia,serif;
+    font-size:2.4rem;
+    display:block;
+  }
+  .chiffre-cle.ok .nb{color:var(--vert);}
+  .chiffre-cle.alerte .nb{color:#D98A2B;}
+  .chiffre-cle .lib{font-size:0.9rem;color:var(--gris);}
+
+  .frise{
+    background:var(--blanc);
+    padding:24px;
+    margin-bottom:28px;
+  }
+  .frise-titre{margin-bottom:16px;font-size:1.1rem;}
+  .frise-barre{
+    display:flex;
+    gap:2px;
+    height:44px;
+  }
+  .frise-an{
+    flex:1;
+    background:var(--vert-clair);
+    position:relative;
+    cursor:default;
+  }
+  .frise-an.manquant{
+    background:var(--jaune);
+    outline:2px solid #D98A2B;
+    outline-offset:-2px;
+    cursor:pointer;
+  }
+  .frise-an.manquant:hover::after{
+    content:attr(data-an);
+    position:absolute;
+    bottom:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--noir);
+    color:var(--blanc);
+    padding:2px 8px;
+    font-size:0.75rem;
+    white-space:nowrap;
+  }
+  .frise-legende{
+    display:flex;
+    gap:24px;
+    margin-top:12px;
+    font-size:0.82rem;
+    color:var(--gris);
+    flex-wrap:wrap;
+  }
+  .frise-legende span::before{
+    content:"";
+    display:inline-block;
+    width:12px;height:12px;
+    margin-right:6px;
+    vertical-align:-1px;
+  }
+  .leg-ok::before{background:var(--vert-clair);}
+  .leg-ko::before{background:var(--jaune);outline:2px solid #D98A2B;outline-offset:-2px;}
+
+  .alertes-liste{display:flex;flex-direction:column;gap:12px;margin-bottom:32px;}
+  .alerte-item{
+    background:var(--rose-pale);
+    border-left:5px solid var(--rose);
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .alerte-item .picto{font-size:1.4rem;}
+  .alerte-item strong{display:block;}
+  .alerte-item small{color:var(--gris);}
+
+  /* ============ VUE 2 : RÉPARATEUR ============ */
+  .progression{
+    background:var(--blanc);
+    padding:16px 24px;
+    margin-bottom:24px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .barre-prog{
+    flex:1;
+    min-width:160px;
+    height:10px;
+    background:var(--beige-2);
+  }
+  .barre-prog > div{
+    height:100%;
+    background:var(--vert);
+    width:0%;
+    transition:width .5s ease;
+  }
+  .carte-annee{
+    background:var(--blanc);
+    margin-bottom:20px;
+    border:1.5px solid #e8e4dc;
+  }
+  .carte-annee.validee{border-color:var(--vert);}
+  .carte-tete{
+    padding:20px 24px;
+    display:flex;
+    align-items:flex-start;
+    gap:16px;
+  }
+  .pastille-annee{
+    font-family:'Spoof','Bookman Old Style',Georgia,serif;
+    font-size:1.3rem;
+    background:var(--beige);
+    padding:8px 14px;
+    white-space:nowrap;
+  }
+  .carte-annee.validee .pastille-annee{background:var(--vert);color:var(--blanc);}
+  .carte-tete h3{font-size:1.15rem;margin-bottom:4px;}
+  .carte-tete p{color:var(--gris);font-size:0.95rem;}
+  .doc-attendu{
+    background:var(--beige);
+    margin:0 24px 20px;
+    padding:14px 18px;
+    font-size:0.95rem;
+  }
+  .doc-attendu strong{color:var(--noir);}
+  .carte-actions{
+    padding:0 24px 24px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  /* Exemple visuel du document */
+  .exemple-doc{
+    display:none;
+    margin:0 24px 20px;
+    padding:20px;
+    background:var(--rose-pale);
+  }
+  .exemple-doc.ouvert{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;}
+  .mini-doc{
+    width:190px;
+    min-height:240px;
+    background:var(--blanc);
+    border:1px solid #ddd;
+    box-shadow:2px 3px 0 rgba(18,18,18,0.08);
+    padding:14px;
+    font-size:0.6rem;
+    color:var(--gris);
+    flex-shrink:0;
+  }
+  .mini-doc .md-titre{
+    font-weight:700;
+    color:var(--noir);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    margin-bottom:8px;
+    text-align:center;
+  }
+  .md-zone{
+    border:1.5px dashed var(--vert);
+    padding:3px 5px;
+    margin:6px 0;
+    color:var(--vert);
+    font-weight:600;
+  }
+  .md-ligne{height:5px;background:#eee;margin:5px 0;}
+  .md-ligne.courte{width:60%;}
+  .exemple-doc .explication{flex:1;min-width:220px;font-size:0.95rem;}
+  .exemple-doc .explication ul{margin:8px 0 0 20px;}
+  .exemple-doc .explication li{margin-bottom:4px;}
+
+  /* État de la carte après analyse */
+  .zone-resultat{padding:0 24px 24px;display:none;}
+  .zone-resultat.visible{display:block;}
+  .analyse-en-cours{
+    display:flex;align-items:center;gap:14px;
+    background:var(--beige);
+    padding:16px 20px;
+  }
+  .spinner{
+    width:22px;height:22px;
+    border:3px solid var(--beige-2);
+    border-top-color:var(--vert);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    flex-shrink:0;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .resultat-ko{
+    background:var(--rose-pale);
+    border-left:5px solid var(--rose);
+    padding:18px 20px;
+  }
+  .resultat-ko h4{margin-bottom:6px;font-size:1rem;}
+  .resultat-ko p{font-size:0.95rem;margin-bottom:12px;}
+
+  .resultat-ok{
+    background:#EFF8F3;
+    border-left:5px solid var(--vert);
+    padding:18px 20px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .resultat-ok .detail{flex:1;font-size:0.95rem;}
+  .resultat-ok .detail strong{display:block;margin-bottom:2px;}
+  .note-reformat{
+    font-size:0.88rem;
+    color:var(--gris);
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px dashed var(--vert-clair);
+  }
+
+  /* ============ LE TAMPON (élément signature) ============ */
+  .tampon{
+    font-family:'Spoof','Bookman Old Style',Georgia,serif;
+    border:3px solid var(--vert);
+    color:var(--vert);
+    padding:6px 16px;
+    font-size:1.15rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    transform:rotate(-7deg);
+    flex-shrink:0;
+    position:relative;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(255,255,255,.25) 0 2px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,.3) 0 1.5px, transparent 2.5px);
+  }
+  .tampon.anim{animation:tamponner .45s cubic-bezier(.2,1.6,.4,1) both;}
+  @keyframes tamponner{
+    0%{transform:rotate(-7deg) scale(2.6);opacity:0;}
+    60%{transform:rotate(-7deg) scale(0.94);opacity:1;}
+    100%{transform:rotate(-7deg) scale(1);opacity:1;}
+  }
+
+  /* ============ FAUX EXPLORATEUR (modale) ============ */
+  .voile{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(18,18,18,0.5);
+    z-index:50;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .voile.ouvert{display:flex;}
+  .modale{
+    background:var(--blanc);
+    max-width:520px;
+    width:100%;
+    padding:28px;
+    animation:fadein .25s ease;
+  }
+  .modale h3{font-size:1.2rem;margin-bottom:4px;}
+  .modale > p{color:var(--gris);font-size:0.92rem;margin-bottom:18px;}
+  .fichier{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    text-align:left;
+    background:var(--blanc-casse);
+    padding:14px 16px;
+    margin-bottom:10px;
+    border:1.5px solid transparent;
+    font-size:0.95rem;
+    transition:border-color .15s;
+  }
+  .fichier:hover{border-color:var(--vert);}
+  .fichier .icone{
+    width:34px;height:42px;
+    background:var(--blanc);
+    border:1.5px solid var(--gris);
+    position:relative;
+    flex-shrink:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    font-size:0.55rem;font-weight:700;color:var(--blanc);
+  }
+  .fichier .icone::after{
+    content:attr(data-ext);
+    background:var(--noir);
+    width:100%;
+    text-align:center;
+    padding:1px 0;
+  }
+  .fichier .icone.jpg::after{background:var(--rose);}
+  .modale .fermer{margin-top:8px;}
+
+  /* ============ VUE 3 : VOIE ROYALE ============ */
+  .finale{
+    text-align:center;
+    padding:48px 24px;
+    background:var(--blanc);
+  }
+  .dossier-visuel{
+    width:150px;height:110px;
+    margin:0 auto 8px;
+    background:var(--beige-2);
+    position:relative;
+    box-shadow:0 4px 0 rgba(18,18,18,.06);
+  }
+  .dossier-visuel::before{
+    content:"";
+    position:absolute;
+    top:-14px;left:0;
+    width:60px;height:14px;
+    background:var(--beige-2);
+  }
+  .dossier-visuel .tampon{
+    position:absolute;
+    top:28px;left:50%;
+    margin-left:-72px;
+    font-size:1.25rem;
+    background-color:var(--blanc);
+  }
+  .finale h2{font-size:1.9rem;margin:24px 0 10px;}
+  .finale > p{color:var(--gris);max-width:520px;margin:0 auto 28px;}
+  .recap-docs{
+    max-width:480px;
+    margin:0 auto 32px;
+    text-align:left;
+  }
+  .recap-docs li{
+    list-style:none;
+    background:var(--beige);
+    padding:12px 18px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:0.95rem;
+    flex-wrap:wrap;
+  }
+  .recap-docs li .ok{color:var(--vert);font-weight:700;white-space:nowrap;}
+
+  /* ============ NOTES DÉMO ============ */
+  .notes-demo{
+    max-width:860px;
+    margin:40px auto 0;
+    padding:0 24px;
+  }
+  .notes-demo details{
+    background:var(--blanc-casse);
+    border:1px dashed var(--gris);
+    padding:16px 20px;
+    font-size:0.9rem;
+    color:var(--gris);
+  }
+  .notes-demo summary{cursor:pointer;color:var(--noir);font-weight:600;}
+  .notes-demo ol{margin:12px 0 0 20px;}
+  .notes-demo li{margin-bottom:6px;}
+
+  .lien-retour{
+    background:none;
+    color:var(--gris);
+    text-decoration:underline;
+    padding:0;
+    font-size:0.9rem;
+    margin-bottom:20px;
+  }
+  .lien-retour:hover{color:var(--noir);}
+
+  @media (max-width:600px){
+    body{font-size:16px;}
+    .stepper{gap:4px;}
+    .step{font-size:0.68rem;padding:8px 2px;}
+    .carte-tete{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">alphonse<span>.</span></div>
+  <div class="badge-poc">POC — Le Réparateur de Carrière</div>
+</header>
+
+<nav class="stepper" aria-label="Étapes du parcours">
+  <div class="step active" id="step1">1 · Constat</div>
+  <div class="step" id="step2">2 · Dépôt guidé</div>
+  <div class="step" id="step3">3 · Certification</div>
+  <div class="step" id="step4">4 · Dossier prêt</div>
+</nav>
+
+<main>
+
+  <!-- ============ VUE 1 : LE CONSTAT VISUEL ============ -->
+  <section class="vue visible" id="vue-constat">
+    <div class="intro">
+      <p class="surtitre">Votre relevé de carrière</p>
+      <h1>Bonjour Marie, voici où en est votre carrière.</h1>
+      <p>On a analysé votre relevé de carrière transmis par votre caisse de retraite. La bonne nouvelle : l'essentiel est en ordre. Il reste 3 années à régulariser avant de constituer votre dossier.</p>
+    </div>
+
+    <div class="synthese">
+      <div class="chiffre-cle ok">
+        <span class="nb">37</span>
+        <span class="lib">années validées</span>
+      </div>
+      <div class="chiffre-cle alerte">
+        <span class="nb">3</span>
+        <span class="lib">années à régulariser</span>
+      </div>
+      <div class="chiffre-cle ok">
+        <span class="nb">2029</span>
+        <span class="lib">départ envisagé</span>
+      </div>
+    </div>
+
+    <div class="frise">
+      <h2 class="frise-titre">Votre carrière en un coup d'œil (1985 → 2025)</h2>
+      <div class="frise-barre" id="frise-barre" aria-hidden="true"></div>
+      <div class="frise-legende">
+        <span class="leg-ok">Année validée</span>
+        <span class="leg-ko">Justificatif manquant ou incohérent</span>
+      </div>
+    </div>
+
+    <div class="alertes-liste">
+      <div class="alerte-item">
+        <span class="picto" aria-hidden="true">⚠️</span>
+        <div>
+          <strong>1996 — Textilex SA</strong>
+          <small>Vos salaires de cette année ne sont pas reportés sur votre relevé. Il manque un bulletin de salaire pour prouver la période.</small>
+        </div>
+      </div>
+      <div class="alerte-item">
+        <span class="picto" aria-hidden="true">⚠️</span>
+        <div>
+          <strong>1997 — Textilex SA</strong>
+          <small>Même situation que 1996 : le salaire reporté est incomplet. Un bulletin de décembre 1997 suffit à corriger l'année.</small>
+        </div>
+      </div>
+      <div class="alerte-item">
+        <span class="picto" aria-hidden="true">⚠️</span>
+        <div>
+          <strong>1998 — Période de chômage</strong>
+          <small>Vos trimestres de chômage indemnisé n'apparaissent pas. Une attestation ASSEDIC permet de les faire valider.</small>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primaire" onclick="allerVue(2)">Régulariser mes 3 années →</button>
+  </section>
+
+  <!-- ============ VUE 2 : LE RÉPARATEUR ============ -->
+  <section class="vue" id="vue-reparateur">
+    <button class="lien-retour" onclick="allerVue(1)">← Revenir au constat</button>
+    <div class="intro">
+      <p class="surtitre">Le réparateur de carrière</p>
+      <h1>Déposez vos justificatifs, on vérifie tout.</h1>
+      <p>Pour chaque année, on vous indique le document exact à retrouver. Dès qu'un document est déposé, on le vérifie : s'il est conforme, il est tamponné « Validé ». Sinon, on vous explique quoi chercher à la place.</p>
+    </div>
+
+    <div class="progression">
+      <span id="prog-texte"><strong>0/3</strong> justificatifs validés</span>
+      <div class="barre-prog"><div id="prog-barre"></div></div>
+    </div>
+
+    <div id="cartes-annees"></div>
+
+    <div id="cta-final" style="display:none;text-align:center;margin-top:32px;">
+      <button class="btn-vert" onclick="allerVue(3)">Voir mon dossier prêt →</button>
+    </div>
+  </section>
+
+  <!-- ============ VUE 3 : LA VOIE ROYALE ============ -->
+  <section class="vue" id="vue-finale">
+    <div class="finale">
+      <div class="dossier-visuel">
+        <div class="tampon anim">Validé</div>
+      </div>
+      <h2>Félicitations Marie, vos justificatifs sont prêts.</h2>
+      <p>Vos 3 années ont été régularisées avec des documents conformes aux exigences des caisses de retraite. Vous pouvez constituer votre demande de régularisation en toute sérénité.</p>
+      <ul class="recap-docs">
+        <li><span>1996 · Bulletin de salaire — décembre 1996</span><span class="ok">✓ Validé</span></li>
+        <li><span>1997 · Bulletin de salaire — décembre 1997 <em>(converti en PDF)</em></span><span class="ok">✓ Validé</span></li>
+        <li><span>1998 · Attestation ASSEDIC — périodes indemnisées</span><span class="ok">✓ Validé</span></li>
+      </ul>
+      <button class="btn-primaire" onclick="alert('Hors périmètre du POC : cette étape enchaîne sur la constitution du dossier de régularisation.')">Constituer ma demande de régularisation</button>
+      <br><br>
+      <button class="btn-secondaire" onclick="reinitialiser()">Rejouer la démo</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FAUX EXPLORATEUR DE FICHIERS ============ -->
+<div class="voile" id="voile" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
+  <div class="modale">
+    <h3 id="modale-titre">Choisissez un document</h3>
+    <p>Mode démo : sélectionnez un fichier pour simuler le dépôt (scan ou photo depuis le téléphone).</p>
+    <div id="liste-fichiers"></div>
+    <button class="btn-secondaire fermer" onclick="fermerModale()">Annuler</button>
+  </div>
+</div>
+
+<!-- ============ NOTES POUR LE PRÉSENTATEUR ============ -->
+<div class="notes-demo">
+  <details>
+    <summary>Notes démo (à masquer avant projection si besoin)</summary>
+    <ol>
+      <li><strong>1996 :</strong> choisir d'abord le <em>contrat de travail</em> → message pédagogique de refus. Puis re-déposer le <em>bulletin de salaire</em> → tampon Validé.</li>
+      <li><strong>1997 :</strong> choisir le <em>bulletin en .jpg</em> → bon document, mauvais format → reformatage automatique en PDF, puis validation.</li>
+      <li><strong>1998 :</strong> choisir la <em>lettre de licenciement</em> pour montrer un 2ᵉ refus pédagogique, ou directement l'<em>attestation ASSEDIC</em> → validation.</li>
+      <li>Une fois 3/3 : bouton vert vers l'écran final « Voie Royale ».</li>
+      <li>Persona et données 100 % fictives. La vérification documentaire est simulée (pas d'OCR dans ce POC).</li>
+    </ol>
+  </details>
+</div>
+
+<script>
+/* ================= DONNÉES DE LA DÉMO (fictives) ================= */
+const ANNEES = [
+  {
+    id:1996,
+    titre:"Salaires non reportés — Textilex SA",
+    contexte:"Votre relevé n'indique aucun salaire pour 1996, alors que vous étiez en poste chez Textilex SA.",
+    docAttendu:"Un bulletin de salaire de décembre 1996 (il récapitule le cumul annuel).",
+    exemple:{
+      titre:"Bulletin de salaire",
+      zones:["Nom de l'employeur","Période : décembre 1996","Cumul brut annuel"],
+      aide:["Il ressemble à une feuille A4 avec un tableau de lignes de paie.","Le bulletin de décembre est le plus utile : il contient le cumul de toute l'année.","Une photo bien lisible depuis votre téléphone suffit."]
+    },
+    fichiers:[
+      {nom:"Contrat_de_travail_Textilex_1996.pdf", ext:"PDF", resultat:"ko",
+       message:"Ce document est un contrat de travail. Il prouve votre embauche, mais pas les salaires versés. Pour valider l'année 1996, la caisse a besoin de votre bulletin de salaire de décembre 1996, qui indique le cumul annuel."},
+      {nom:"Bulletin_salaire_decembre_1996.pdf", ext:"PDF", resultat:"ok",
+       libelle:"Bulletin de salaire — décembre 1996",
+       message:"Ce bulletin est conforme : employeur, période et cumul annuel sont bien lisibles."},
+      {nom:"Releve_bancaire_1996.pdf", ext:"PDF", resultat:"ko",
+       message:"Ce document est un relevé bancaire. Il montre des virements, mais les caisses de retraite ne l'acceptent pas comme preuve de salaire. Le document recherché est votre bulletin de salaire de décembre 1996."}
+    ]
+  },
+  {
+    id:1997,
+    titre:"Salaire incomplet — Textilex SA",
+    contexte:"Le salaire reporté pour 1997 est inférieur à votre rémunération réelle : il manque probablement un trimestre.",
+    docAttendu:"Un bulletin de salaire de décembre 1997.",
+    exemple:{
+      titre:"Bulletin de salaire",
+      zones:["Nom de l'employeur","Période : décembre 1997","Cumul brut annuel"],
+      aide:["Même document que pour 1996, mais daté de décembre 1997.","Si vous ne l'avez qu'en photo, pas d'inquiétude : on le convertit au bon format pour vous."]
+    },
+    fichiers:[
+      {nom:"Bulletin_salaire_decembre_1997.jpg", ext:"JPG", resultat:"reformat",
+       libelle:"Bulletin de salaire — décembre 1997",
+       message:"Ce bulletin est le bon document et il est parfaitement lisible.",
+       noteReformat:"Votre photo (.jpg) a été convertie automatiquement au format PDF demandé par votre caisse de retraite. Rien à refaire de votre côté."},
+      {nom:"Certificat_de_travail_1997.pdf", ext:"PDF", resultat:"ko",
+       message:"Ce document est un certificat de travail. Il atteste que vous avez quitté l'entreprise, mais il n'indique pas vos salaires. Pour valider l'année 1997, cherchez votre bulletin de salaire de décembre 1997."}
+    ]
+  },
+  {
+    id:1998,
+    titre:"Trimestres de chômage non validés",
+    contexte:"Vos périodes de chômage indemnisé en 1998 n'apparaissent pas sur votre relevé. Elles comptent pourtant pour votre retraite.",
+    docAttendu:"Une attestation ASSEDIC mentionnant vos périodes indemnisées en 1998.",
+    exemple:{
+      titre:"Attestation ASSEDIC",
+      zones:["Logo ASSEDIC","Périodes indemnisées","Montant des allocations"],
+      aide:["C'est un courrier officiel à en-tête ASSEDIC (l'ancêtre de Pôle emploi / France Travail).","Il liste les périodes pendant lesquelles vous avez été indemnisée.","Si vous ne le retrouvez pas, votre agence France Travail peut vous en délivrer un duplicata."]
+    },
+    fichiers:[
+      {nom:"Attestation_ASSEDIC_1998.pdf", ext:"PDF", resultat:"ok",
+       libelle:"Attestation ASSEDIC — périodes indemnisées 1998",
+       message:"Cette attestation est conforme : les périodes indemnisées de 1998 y figurent clairement."},
+      {nom:"Lettre_de_licenciement_1998.pdf", ext:"PDF", resultat:"ko",
+       message:"Ce document est une lettre de licenciement. Elle prouve la fin de votre contrat, mais pas vos périodes indemnisées. Le document recherché est votre attestation ASSEDIC, qui liste les mois où vous avez perçu des allocations."}
+    ]
+  }
+];
+
+const etatValidation = {}; // id année -> true
+let anneeCourante = null;
+
+/* ================= FRISE DE CARRIÈRE ================= */
+(function construireFrise(){
+  const barre = document.getElementById('frise-barre');
+  for(let an=1985; an<=2025; an++){
+    const d = document.createElement('div');
+    d.className = 'frise-an' + ([1996,1997,1998].includes(an) ? ' manquant' : '');
+    d.dataset.an = an;
+    if(d.classList.contains('manquant')) d.onclick = () => allerVue(2);
+    barre.appendChild(d);
+  }
+})();
+
+/* ================= CARTES ANNÉES ================= */
+function construireCartes(){
+  const conteneur = document.getElementById('cartes-annees');
+  conteneur.innerHTML = '';
+  ANNEES.forEach(a => {
+    const carte = document.createElement('div');
+    carte.className = 'carte-annee';
+    carte.id = 'carte-' + a.id;
+    carte.innerHTML = `
+      <div class="carte-tete">
+        <div class="pastille-annee">${a.id}</div>
+        <div>
+          <h3>${a.titre}</h3>
+          <p>${a.contexte}</p>
+        </div>
+      </div>
+      <div class="doc-attendu">📄 Document recherché : <strong>${a.docAttendu}</strong></div>
+      <div class="exemple-doc" id="exemple-${a.id}">
+        <div class="mini-doc" aria-hidden="true">
+          <div class="md-titre">${a.exemple.titre}</div>
+          ${a.exemple.zones.map(z => `<div class="md-zone">${z}</div><div class="md-ligne"></div><div class="md-ligne courte"></div>`).join('')}
+        </div>
+        <div class="explication">
+          <strong>À quoi ressemble ce document ?</strong>
+          <ul>${a.exemple.aide.map(l => `<li>${l}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <div class="zone-resultat" id="resultat-${a.id}"></div>
+      <div class="carte-actions" id="actions-${a.id}">
+        <button class="btn-secondaire" onclick="basculerExemple(${a.id})">Voir un exemple du document</button>
+        <button class="btn-primaire" onclick="ouvrirModale(${a.id})">Déposer mon document</button>
+      </div>
+    `;
+    conteneur.appendChild(carte);
+  });
+}
+construireCartes();
+
+function basculerExemple(id){
+  document.getElementById('exemple-' + id).classList.toggle('ouvert');
+}
+
+/* ================= FAUX EXPLORATEUR ================= */
+function ouvrirModale(id){
+  anneeCourante = ANNEES.find(a => a.id === id);
+  const liste = document.getElementById('liste-fichiers');
+  liste.innerHTML = '';
+  anneeCourante.fichiers.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.className = 'fichier';
+    b.innerHTML = `<span class="icone ${f.ext === 'JPG' ? 'jpg' : ''}" data-ext="${f.ext}"></span><span>${f.nom}</span>`;
+    b.onclick = () => choisirFichier(i);
+    liste.appendChild(b);
+  });
+  document.getElementById('voile').classList.add('ouvert');
+}
+function fermerModale(){
+  document.getElementById('voile').classList.remove('ouvert');
+}
+document.getElementById('voile').addEventListener('click', e => {
+  if(e.target.id === 'voile') fermerModale();
+});
+
+/* ================= ANALYSE SIMULÉE + CERTIFICATION ================= */
+function choisirFichier(index){
+  const fichier = anneeCourante.fichiers[index];
+  const annee = anneeCourante;
+  fermerModale();
+
+  const zone = document.getElementById('resultat-' + annee.id);
+  zone.classList.add('visible');
+  zone.innerHTML = `
+    <div class="analyse-en-cours">
+      <div class="spinner" aria-hidden="true"></div>
+      <span>Vérification de votre document en cours…</span>
+    </div>`;
+
+  setTimeout(() => {
+    if(fichier.resultat === 'ko'){
+      afficherRefus(annee, fichier);
+    } else {
+      if(fichier.resultat === 'reformat'){
+        zone.innerHTML = `
+          <div class="analyse-en-cours">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Bon document détecté. Conversion au format PDF en cours…</span>
+          </div>`;
+        setTimeout(() => afficherValidation(annee, fichier), 1600);
+      } else {
+        afficherValidation(annee, fichier);
+      }
+    }
+  }, 1800);
+}
+
+function afficherRefus(annee, fichier){
+  const zone = document.getElementById('resultat-' + annee.id);
+  zone.innerHTML = `
+    <div class="resultat-ko">
+      <h4>Ce n'est pas tout à fait le bon document — et ce n'est pas grave.</h4>
+      <p>${fichier.message}</p>
+      <button class="btn-primaire" onclick="ouvrirModale(${annee.id})">Chercher un autre document</button>
+    </div>`;
+}
+
+function afficherValidation(annee, fichier){
+  const zone = document.getElementById('resultat-' + annee.id);
+  zone.innerHTML = `
+    <div class="resultat-ok">
+      <div class="detail">
+        <strong>${fichier.libelle}</strong>
+        ${fichier.message}
+        ${fichier.noteReformat ? `<div class="note-reformat">🔄 ${fichier.noteReformat}</div>` : ''}
+      </div>
+      <div class="tampon anim">Validé</div>
+    </div>`;
+
+  const carte = document.getElementById('carte-' + annee.id);
+  carte.classList.add('validee');
+  document.getElementById('actions-' + annee.id).style.display = 'none';
+  document.getElementById('exemple-' + annee.id).classList.remove('ouvert');
+
+  etatValidation[annee.id] = true;
+  mettreAJourProgression();
+}
+
+function mettreAJourProgression(){
+  const n = Object.keys(etatValidation).length;
+  document.getElementById('prog-texte').innerHTML = `<strong>${n}/3</strong> justificatifs validés`;
+  document.getElementById('prog-barre').style.width = (n / 3 * 100) + '%';
+  if(n === 3){
+    document.getElementById('cta-final').style.display = 'block';
+    document.getElementById('cta-final').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+/* ================= NAVIGATION ================= */
+function allerVue(n){
+  document.querySelectorAll('.vue').forEach(v => v.classList.remove('visible'));
+  const vues = {1:'vue-constat', 2:'vue-reparateur', 3:'vue-finale'};
+  document.getElementById(vues[n]).classList.add('visible');
+
+  for(let i=1; i<=4; i++){
+    const s = document.getElementById('step' + i);
+    s.classList.remove('active','done');
+  }
+  if(n === 1){ document.getElementById('step1').classList.add('active'); }
+  if(n === 2){
+    document.getElementById('step1').classList.add('done');
+    document.getElementById('step2').classList.add('active');
+    document.getElementById('step3').classList.add('active');
+  }
+  if(n === 3){
+    ['step1','step2','step3','step4'].forEach((id,i) => {
+      document.getElementById(id).classList.add(i < 3 ? 'done' : 'active');
+    });
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function reinitialiser(){
+  Object.keys(etatValidation).forEach(k => delete etatValidation[k]);
+  construireCartes();
+  mettreAJourProgressionSansCta();
+  document.getElementById('cta-final').style.display = 'none';
+  allerVue(1);
+}
+function mettreAJourProgressionSansCta(){
+  document.getElementById('prog-texte').innerHTML = `<strong>0/3</strong> justificatifs validés`;
+  document.getElementById('prog-barre').style.width = '0%';
+}
+</script>
+</body>
+</html>
